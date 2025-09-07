@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Todo</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline';"
+    />
+    <link rel="stylesheet" type="text/css" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>Welcome to TODO app</h1>
+        <div class="header-actions">
+          <div class="theme-controls">
+            <span class="theme-label"
+              >Theme: <strong id="theme-source">System</strong></span
+            >
+            <button id="toggle-dark-mode" class="btn btn-ghost">
+              Toggle Dark Mode
+            </button>
+            <button id="reset-to-system" class="btn btn-outline">
+              Reset to System
+            </button>
+          </div>
+          <nav class="nav-controls" aria-label="History navigation">
+            <button id="back" class="btn" disabled>Back</button>
+            <button id="forward" class="btn" disabled>Forward</button>
+            <button id="next" class="btn btn-primary">Next Page</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section class="composer" aria-labelledby="add-todo-heading">
+          <h2 id="add-todo-heading" class="visually-hidden">Add a todo</h2>
+          <div class="form-grid">
+            <input
+              type="text"
+              id="title"
+              placeholder="Title"
+              aria-label="Todo title"
+            />
+            <input
+              type="text"
+              id="description"
+              placeholder="Description"
+              aria-label="Todo description"
+            />
+            <div class="composer-actions">
+              <button id="add-todo" class="btn btn-primary">Add Todo</button>
+              <button id="get-todos" class="btn btn-outline">Refresh</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="list-section" aria-labelledby="todo-list-heading">
+          <h2 id="todo-list-heading" class="visually-hidden">Todos</h2>
+          <ul id="todo-list" class="todo-grid"></ul>
+        </section>
+      </main>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,159 @@
+/* Design tokens */
+:root {
+  --bg: #f6f7f9;
+  --text: #0f172a;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --primary: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 10px 20px rgba(15, 23, 42, 0.06);
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  color: var(--text);
+  background: radial-gradient(
+      1200px 800px at 0% 0%,
+      rgba(59, 130, 246, 0.07),
+      transparent 60%
+    ),
+    radial-gradient(
+      1200px 800px at 100% 100%,
+      rgba(16, 185, 129, 0.08),
+      transparent 60%
+    ),
+    var(--bg);
+  line-height: 1.5;
+}
+
+body.dark-mode {
+  --bg: #0b0f17;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --card: #121826;
+  --border: #263146;
+  --primary: #60a5fa;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+.container {
+  max-width: min(800px, 100% - 32px);
+  margin: 24px auto 56px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 1.1rem + 1vw, 1.75rem);
+}
+
+.theme-toggle {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.main-content {
+  margin-top: 18px;
+}
+
+.edit-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.form-group {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.edit-form input[type="text"],
+.edit-form input[type="date"],
+.edit-form textarea,
+.edit-form select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.checkbox-group .checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.2s ease, background 0.2s ease,
+    color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+}
+.btn-secondary {
+  background: transparent;
+}
+
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

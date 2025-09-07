@@ -1,0 +1,33 @@
+// preload.js
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("darkMode", {
+  toggle: () => ipcRenderer.invoke("dark-mode:toggle"),
+  system: () => ipcRenderer.invoke("dark-mode:system"),
+});
+
+contextBridge.exposeInMainWorld("goToNextPage", {
+  next: () => ipcRenderer.send("next-page"),
+  back: () => ipcRenderer.send("back-page"),
+  forward: () => ipcRenderer.send("forward-page"),
+});
+
+contextBridge.exposeInMainWorld("nav", {
+  canGoBack: () => ipcRenderer.invoke("nav:can-go-back"),
+  canGoForward: () => ipcRenderer.invoke("nav:can-go-forward"),
+  onUpdate: (cb) => {
+    // cb receives state: { canGoBack, canGoForward }
+    ipcRenderer.on("nav:update", (_, state) => cb(state));
+  },
+});
+
+contextBridge.exposeInMainWorld("todo", {
+  addTodo: (todo) => ipcRenderer.send("todo:add", todo),
+  getTodos: () => ipcRenderer.invoke("todo:get"),
+  getTodoById: (id) => ipcRenderer.invoke("todo:get-by-id", id),
+  getCurrentTodoId: () => ipcRenderer.invoke("todo:get-current-id"),
+  updateTodo: (todo) => ipcRenderer.invoke("todo:update", todo),
+  deleteTodo: (todo) => ipcRenderer.invoke("todo:delete", todo),
+  navigateToEdit: (todoId) => ipcRenderer.send("navigate:edit", todoId),
+  navigateToMain: () => ipcRenderer.send("navigate:main"),
+});

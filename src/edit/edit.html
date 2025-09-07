@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Todo</title>
+    <link rel="stylesheet" href="edit.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Edit Todo</h1>
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          aria-label="Toggle dark mode"
+        >
+          <span class="theme-icon">🌙</span>
+        </button>
+      </header>
+
+      <main class="main-content">
+        <form class="edit-form" id="edit-form">
+          <div class="form-group">
+            <label for="todo-title">Title</label>
+            <input
+              type="text"
+              id="todo-title"
+              name="title"
+              placeholder="Enter todo title..."
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="todo-description">Description</label>
+            <textarea
+              id="todo-description"
+              name="description"
+              placeholder="Enter todo description..."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="todo-priority">Priority</label>
+            <select id="todo-priority" name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="todo-due-date">Due Date</label>
+            <input type="date" id="todo-due-date" name="dueDate" />
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="todo-completed" name="completed" />
+              <span class="checkmark"></span>
+              Mark as completed
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancel-btn">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      // Theme toggle functionality
+      const themeToggle = document.getElementById("theme-toggle");
+      const themeIcon = themeToggle.querySelector(".theme-icon");
+
+      // Check for saved theme preference or default to light mode
+      const currentTheme = localStorage.getItem("theme") || "light";
+      document.body.classList.toggle("dark-mode", currentTheme === "dark");
+      updateThemeIcon();
+
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+        updateThemeIcon();
+      });
+
+      function updateThemeIcon() {
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        themeIcon.textContent = isDarkMode ? "☀️" : "🌙";
+      }
+
+      // Form handling
+      const editForm = document.getElementById("edit-form");
+      const cancelBtn = document.getElementById("cancel-btn");
+      let currentTodo = null;
+
+      // Load todo data when page loads
+      window.addEventListener("DOMContentLoaded", async () => {
+        try {
+          // Get the todo ID from the main process
+          const todoId = await window.todo.getCurrentTodoId();
+          if (todoId) {
+            currentTodo = await window.todo.getTodoById(todoId);
+            if (currentTodo) {
+              populateForm(currentTodo);
+            } else {
+              alert("Todo not found!");
+              window.todo.navigateToMain();
+            }
+          } else {
+            alert("No todo selected for editing!");
+            window.todo.navigateToMain();
+          }
+        } catch (error) {
+          console.error("Error loading todo:", error);
+          alert("Error loading todo data!");
+          window.todo.navigateToMain();
+        }
+      });
+
+      function populateForm(todo) {
+        document.getElementById("todo-title").value = todo.title || "";
+        document.getElementById("todo-description").value =
+          todo.description || "";
+        document.getElementById("todo-priority").value =
+          todo.priority || "medium";
+        document.getElementById("todo-due-date").value = todo.dueDate || "";
+        document.getElementById("todo-completed").checked = todo.done || false;
+      }
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!currentTodo) {
+          alert("No todo data available!");
+          return;
+        }
+
+        try {
+          const formData = new FormData(editForm);
+          const todoData = {
+            id: currentTodo.id,
+            title: formData.get("title"),
+            description: formData.get("description"),
+            priority: formData.get("priority"),
+            dueDate: formData.get("dueDate"),
+            done: formData.has("completed"),
+            createdAt: currentTodo.createdAt,
+            updatedAt: new Date().toISOString(),
+          };
+
+          // Validate required fields
+          if (!todoData.title || todoData.title.trim() === "") {
+            alert("Please enter a title");
+            return;
+          }
+
+          const updatedTodo = await window.todo.updateTodo(todoData);
+          if (updatedTodo) {
+            alert("Todo updated successfully!");
+            window.todo.navigateToMain();
+          } else {
+            alert("Failed to update todo!");
+          }
+        } catch (error) {
+          console.error("Error updating todo:", error);
+          alert("Error updating todo!");
+        }
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        if (
+          confirm(
+            "Are you sure you want to cancel? Unsaved changes will be lost."
+          )
+        ) {
+          window.todo.navigateToMain();
+        }
+      });
+    </script>
+  </body>
+</html>
