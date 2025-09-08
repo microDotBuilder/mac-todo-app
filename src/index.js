@@ -2,22 +2,34 @@ const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron/main");
 const path = require("node:path");
 const Database = require("./database.js");
 const FileStorage = require("./storage/fileStorage.js");
+const SqliteFileStorage = require("./storage/sqliteFileStorage.js");
+const { getLogger } = require("./logger/logg.js");
 
-console.log(`__dirname : ${__dirname}`);
+const logger = getLogger("main");
+
+logger.info(`__dirname : ${__dirname}`);
+
 const fileStoragePath = path.join(__dirname, "/db/todo.json");
+const sqliteFileStoragePath = path.join(__dirname, "/db/todo.db");
 
-const database = new Database(
-  new FileStorage({
-    filepath: fileStoragePath,
-  })
-);
+const SQLITE_FLAG = true;
+if (SQLITE_FLAG) logger.info("Using SQLite File Storage feature flag");
+
+const fileStorage = SQLITE_FLAG
+  ? new SqliteFileStorage({
+      filepath: sqliteFileStoragePath,
+    })
+  : new FileStorage({
+      filepath: fileStoragePath,
+    });
+const database = new Database(fileStorage);
 let win;
 (() => {
   try {
     database.init();
-    console.log("Database initialized");
+    logger.info("Database initialized");
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 })();
 
@@ -99,59 +111,59 @@ ipcMain.handle("nav:can-go-forward", () => {
 
 ipcMain.on("todo:add", (event, todo) => {
   //add todo to database
-  console.log(`todo : ${JSON.stringify(todo, null, 2)}`);
+  logger.info(`todo : ${JSON.stringify(todo, null, 2)}`);
   try {
-    console.log(`adding todo : ${JSON.stringify(todo, null, 2)}`);
+    logger.info(`adding todo : ${JSON.stringify(todo, null, 2)}`);
     database.addTodo(todo);
-    console.log(`todo added : ${JSON.stringify(todo, null, 2)}`);
+    logger.info(`todo added : ${JSON.stringify(todo, null, 2)}`);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 ipcMain.handle("todo:get", async () => {
   try {
     const todos = await database.getAllTodos();
-    // console.log(`todos : ${JSON.stringify(todos, null, 2)}`);
+    // log(levels.info, `todos : ${JSON.stringify(todos, null, 2)}`);
     return todos;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw error;
   }
 });
 
 ipcMain.handle("todo:update", async (event, todoData) => {
   try {
-    console.log(`updating todo : ${JSON.stringify(todoData, null, 2)}`);
+    logger.info(`updating todo : ${JSON.stringify(todoData, null, 2)}`);
     const updatedTodo = await database.updateTodo(todoData.id, todoData);
-    console.log(`todo updated : ${JSON.stringify(updatedTodo, null, 2)}`);
+    logger.info(`todo updated : ${JSON.stringify(updatedTodo, null, 2)}`);
     return updatedTodo;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw error;
   }
 });
 
 ipcMain.handle("todo:delete", async (event, todoData) => {
   try {
-    console.log(`deleting todo : ${JSON.stringify(todoData, null, 2)}`);
+    logger.info(`deleting todo : ${JSON.stringify(todoData, null, 2)}`);
     const deleted = await database.deleteTodo(todoData.id);
-    console.log(`todo deleted : ${deleted}`);
+    logger.info(`todo deleted : ${deleted}`);
     return deleted;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw error;
   }
 });
 
 ipcMain.handle("todo:get-by-id", async (event, id) => {
   try {
-    console.log(`getting todo by id : ${id}`);
+    logger.info(`getting todo by id : ${id}`);
     const todo = await database.getTodoById(id);
-    console.log(`todo retrieved : ${JSON.stringify(todo, null, 2)}`);
+    logger.info(`todo retrieved : ${JSON.stringify(todo, null, 2)}`);
     return todo;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw error;
   }
 });
@@ -183,9 +195,9 @@ app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
   try {
     database.close();
-    console.log("Database closed");
+    logger.info("Database closed");
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
   if (process.platform !== "darwin") app.quit();
 });

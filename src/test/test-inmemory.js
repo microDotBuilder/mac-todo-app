@@ -1,117 +1,120 @@
-// test/test-filestorage.js
 "use strict";
 
 const assert = require("assert").strict;
 const os = require("os");
 const path = require("path");
 const fs = require("fs/promises");
-const FileStorage = require("../storage/fileStorage.js");
+const SqliteFileStorage = require("../storage/sqliteFileStorage.js");
+
+const SCHEMA_SQL = `PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  run_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS todos (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0,1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos (created_at);
+CREATE INDEX IF NOT EXISTS idx_todos_done ON todos (done);
+`;
 
 async function runTests() {
-  const tmpBase = await fs.mkdtemp(path.join(os.tmpdir(), "todo-test-"));
+  const tmpBase = await fs.mkdtemp(path.join(os.tmpdir(), "todo-sqlite-test-"));
   const dbDir = path.join(tmpBase, "db");
-  const filePath = path.join(dbDir, "todo.json");
+  const schemaPath = path.join(dbDir, "schema.sql");
+  const dbFile = path.join(dbDir, "todo.db");
 
-  // create parent dir and an empty file to simulate your existing empty file
   await fs.mkdir(dbDir, { recursive: true });
-  await fs.writeFile(filePath, "", "utf8");
+  await fs.writeFile(schemaPath, SCHEMA_SQL, "utf8");
 
-  // 1) init with empty file
-  const storage = new FileStorage({
-    filepath: filePath,
-    pretty: true,
-    mode: "onClose",
+  const storage = new SqliteFileStorage({
+    filepath: dbFile,
+    schemaPath,
+    busyTimeout: 2000,
   });
+
+  // init should create DB file and schema
   await storage.init();
+
+  // DB file should exist
+  const stat = await fs.stat(dbFile);
+  assert.ok(stat.isFile(), "sqlite db file should exist");
+
+  // start with empty
   let all = await storage.getAllTodos();
   assert.equal(Array.isArray(all), true);
   assert.equal(all.length, 0);
 
-  // 2) add 3 todos
-  const a = await storage.addTodo({ title: "One", description: "first" });
-  const b = await storage.addTodo({ title: "Two" });
-  const c = await storage.addTodo({ title: "Three" });
+  // add 3 todos
+  const t1 = await storage.addTodo({ title: "S1", description: "first" });
+  const t2 = await storage.addTodo({ title: "S2" });
+  const t3 = await storage.addTodo({ title: "S3" });
 
-  assert.ok(a.id && b.id && c.id);
+  assert.ok(t1.id && t2.id && t3.id);
   all = await storage.getAllTodos();
   assert.equal(all.length, 3);
+  assert.equal(all[0].id, t1.id, "ordered by createdAt asc");
 
-  // 3) limit/offset
-  const limited = await storage.getAllTodos({ limit: 2, offset: 1 });
-  assert.equal(limited.length, 2);
-  assert.equal(limited[0].id, b.id);
+  // get by id
+  const fetched = await storage.getTodoById(t2.id);
+  assert.deepEqual(fetched, t2);
 
-  // 4) update existing
-  const updated = await storage.updateTodo(b.id, {
-    title: "Two edited",
+  // missing get returns null
+  const missing = await storage.getTodoById("no-such");
+  assert.equal(missing, null);
+
+  // update t2
+  const before = await storage.getTodoById(t2.id);
+  const updated = await storage.updateTodo(t2.id, {
+    title: "S2-ed",
     done: true,
   });
-  assert.equal(updated.title, "Two edited");
+  assert.equal(updated.title, "S2-ed");
   assert.equal(updated.done, true);
+  assert.equal(updated.createdAt, before.createdAt);
+  assert.notEqual(updated.updatedAt, before.updatedAt);
 
-  // 5) update missing -> null
-  const updMissing = await storage.updateTodo("no-such", { title: "x" });
+  // update missing -> null
+  const updMissing = await storage.updateTodo("no-such-id", { title: "x" });
   assert.equal(updMissing, null);
 
-  // 6) delete existing
-  const del = await storage.deleteTodo(c.id);
-  assert.equal(del, true);
+  // delete t3
+  const deleted = await storage.deleteTodo(t3.id);
+  assert.equal(deleted, true);
   all = await storage.getAllTodos();
   assert.equal(all.length, 2);
 
-  // 7) delete missing
+  // delete missing returns false
   const delMissing = await storage.deleteTodo("no-such");
   assert.equal(delMissing, false);
 
-  // 8) flush() should write pretty JSON
-  await storage.flush();
+  // close storage
+  await storage.close();
 
-  // read file and check content
-  const disk = await fs.readFile(filePath, "utf8");
-  assert.ok(disk.trim().length > 0);
-  const parsed = JSON.parse(disk);
-  assert.equal(Array.isArray(parsed), true);
-  assert.equal(parsed.length, 2);
-
-  // quick check for pretty printing (has newlines and indentation)
-  assert.ok(
-    disk.includes("\n  "),
-    "expected pretty-printed JSON (with indentation)"
-  );
-
-  // 9) immediate mode writes per-operation
-  const storage2 = new FileStorage({
-    filepath: filePath,
-    pretty: true,
-    mode: "immediate",
-  });
+  // Re-open and ensure data persisted
+  const storage2 = new SqliteFileStorage({ filepath: dbFile, schemaPath });
   await storage2.init();
+  const afterReopen = await storage2.getAllTodos();
+  assert.equal(afterReopen.length, 2);
 
-  // start fresh: delete any todos
-  const existing = await storage2.getAllTodos();
-  for (const t of existing) {
-    await storage2.deleteTodo(t.id);
-  }
-  // after deletes in immediate mode file should be updated
-  const afterDeletes = JSON.parse(await fs.readFile(filePath, "utf8"));
-  assert.equal(afterDeletes.length, 0);
-
-  // add one in immediate mode and ensure file contains it
-  const added = await storage2.addTodo({ title: "Immediate" });
-  const disk2 = JSON.parse(await fs.readFile(filePath, "utf8"));
-  assert.equal(disk2.length, 1);
-  assert.equal(disk2[0].title, "Immediate");
-
+  // clean up
   await storage2.close();
-
-  // cleanup
   await fs.rm(tmpBase, { recursive: true, force: true });
 
-  console.log("FileStorage tests passed ✅");
+  console.log("SqliteFileStorage tests passed ✅");
 }
 
 runTests().catch((err) => {
-  console.error("Tests failed ❌");
+  console.error("SqliteFileStorage tests failed ❌");
   console.error(err);
   process.exitCode = 1;
 });
