@@ -1,19 +1,27 @@
 {
   "name": "local-todo-app",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "src/index.js",
   "scripts": {
     "test": "node src/test/test-inmemory.js",
-    "start": "electron ."
+    "start": "electron .",
+    "update-desktop": "node update-desktop/script.js",
+    "build": "electron-builder build --mac"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^38.0.0"
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
-    "dotenv": "^17.2.2"
+    "chalk": "^4.1.2",
+    "dotenv": "^17.2.2",
+    "sqlite3": "^5.1.7"
+  },
+  "engines": {
+    "node": ">=14.17.0"
   }
 }
