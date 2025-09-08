@@ -56,6 +56,21 @@ const DEFAULTS = {
 
 let config = { ...DEFAULTS };
 
+function sanitizeAppName(name) {
+  const fallback = DEFAULTS.appNameSafe || "app";
+  if (typeof name !== "string") return fallback;
+  let n = name.trim();
+  if (!n) return fallback;
+  // Remove path separators
+  n = n.replace(/[\/\\]+/g, "");
+  // Remove leading '.' or '..' segments
+  n = n.replace(/^\.+/, "");
+  // Allow only letters, numbers, hyphen, underscore
+  n = n.replace(/[^A-Za-z0-9_-]+/g, "");
+  if (!n) return fallback;
+  return n;
+}
+
 function getDefaultLogDir() {
   // Prefer Electron app logs dir when available, otherwise use a folder under home
   try {
@@ -72,7 +87,8 @@ function getDefaultLogDir() {
       return path.join(userData, "logs");
     }
   } catch (_) {}
-  return path.join(os.homedir(), "." + DEFAULTS.appName, "logs");
+  const sanitizedAppName = sanitizeAppName(DEFAULTS.appName);
+  return path.join(os.homedir(), "." + sanitizedAppName, "logs");
 }
 
 function ensureDirExists(dirPath) {
@@ -96,13 +112,29 @@ function rotateIfNeeded(filePath) {
       if (fs.existsSync(src)) {
         try {
           fs.renameSync(src, dst);
-        } catch (_) {}
+        } catch (error) {
+          // Report and abort rotation to avoid overwriting older backups
+          // eslint-disable-next-line no-console
+          console.error(
+            `Log rotation error: failed to rename "${src}" -> "${dst}": ${
+              (error && error.message) || error
+            }`
+          );
+          return;
+        }
       }
     }
     const firstBackup = `${filePath}.1`;
     try {
       fs.renameSync(filePath, firstBackup);
-    } catch (_) {}
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `Log rotation error: failed to rename "${filePath}" -> "${firstBackup}": ${
+          (error && error.message) || error
+        }`
+      );
+    }
   } catch (_) {
     // Ignore rotation errors
   }
@@ -154,9 +186,9 @@ function toConsoleString(args) {
 
 function writeToFile(line) {
   if (!config.logToFile) return;
+  const filePath = path.join(config.logDir, config.fileName);
   try {
     ensureDirExists(config.logDir);
-    const filePath = path.join(config.logDir, config.fileName);
     rotateIfNeeded(filePath);
     fs.appendFileSync(filePath, line + os.EOL, { encoding: "utf8" });
   } catch (_) {

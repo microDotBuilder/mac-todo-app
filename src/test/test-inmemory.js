@@ -19,9 +19,18 @@ CREATE TABLE IF NOT EXISTS todos (
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0,1)),
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
+
+CREATE TRIGGER IF NOT EXISTS todos_touch_updated_at
+AFTER UPDATE ON todos
+FOR EACH ROW
+BEGIN
+  UPDATE todos
+    SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = NEW.id;
+END;
 
 CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos (created_at);
 CREATE INDEX IF NOT EXISTS idx_todos_done ON todos (done);
@@ -54,15 +63,19 @@ async function runTests() {
   assert.equal(Array.isArray(all), true);
   assert.equal(all.length, 0);
 
-  // add 3 todos
+  // add 3 todos with tiny delays to ensure distinct createdAt timestamps
   const t1 = await storage.addTodo({ title: "S1", description: "first" });
+  await new Promise((resolve) => setTimeout(resolve, 5));
   const t2 = await storage.addTodo({ title: "S2" });
+  await new Promise((resolve) => setTimeout(resolve, 5));
   const t3 = await storage.addTodo({ title: "S3" });
 
   assert.ok(t1.id && t2.id && t3.id);
   all = await storage.getAllTodos();
   assert.equal(all.length, 3);
   assert.equal(all[0].id, t1.id, "ordered by createdAt asc");
+  assert.equal(all[1].id, t2.id, "ordered by createdAt asc");
+  assert.equal(all[2].id, t3.id, "ordered by createdAt asc");
 
   // get by id
   const fetched = await storage.getTodoById(t2.id);

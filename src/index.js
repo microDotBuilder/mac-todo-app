@@ -9,8 +9,8 @@ const logger = getLogger("main");
 
 logger.info(`__dirname : ${__dirname}`);
 
-const fileStoragePath = path.join(__dirname, "/db/todo.json");
-const sqliteFileStoragePath = path.join(__dirname, "/db/todo.db");
+const fileStoragePath = path.join(__dirname, "db", "todo.json");
+const sqliteFileStoragePath = path.join(__dirname, "db", "todo.db");
 
 const SQLITE_FLAG = true;
 if (SQLITE_FLAG) logger.info("Using SQLite File Storage feature flag");

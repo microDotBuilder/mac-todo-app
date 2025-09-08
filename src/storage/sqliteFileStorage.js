@@ -3,17 +3,15 @@
 const fs = require("fs/promises");
 const path = require("path");
 const sqlite3 = require("sqlite3");
+const crypto = require("crypto");
 
 function generateUuid() {
-  const crypto = require("crypto");
-  if (crypto && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+  if (!crypto || typeof crypto.randomUUID !== "function") {
+    throw new Error(
+      "crypto.randomUUID is not available. Please run on Node.js >=14.17.0."
+    );
   }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return crypto.randomUUID();
 }
 
 class SqliteFileStorage {
@@ -55,7 +53,9 @@ class SqliteFileStorage {
     // useful pragmas
     await this._exec(`PRAGMA foreign_keys = ON;`);
     await this._exec(`PRAGMA journal_mode = WAL;`);
-    await this._exec(`PRAGMA busy_timeout = ${this.busyTimeout};`);
+    // Ensure busyTimeout is a valid integer
+    const timeout = Math.floor(Math.max(0, this.busyTimeout));
+    await this._exec(`PRAGMA busy_timeout = ${timeout};`);
 
     // Load schema file, fallback to embedded minimal schema
     let schemaSql = null;
@@ -76,9 +76,18 @@ CREATE TABLE IF NOT EXISTS todos (
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0,1)),
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
+
+CREATE TRIGGER IF NOT EXISTS todos_touch_updated_at
+AFTER UPDATE ON todos
+FOR EACH ROW
+BEGIN
+  UPDATE todos
+    SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = NEW.id;
+END;
 
 CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos (created_at);
 CREATE INDEX IF NOT EXISTS idx_todos_done ON todos (done);
@@ -140,6 +149,15 @@ CREATE INDEX IF NOT EXISTS idx_todos_done ON todos (done);
 
   async getAllTodos({ limit = null, offset = 0 } = {}) {
     this._ensureInit();
+
+    // Validate pagination parameters
+    if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
+      throw new Error("limit must be a non-negative integer");
+    }
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new Error("offset must be a non-negative integer");
+    }
+
     let sql = `SELECT id, title, description, done, created_at, updated_at
                FROM todos
                ORDER BY created_at ASC`;
@@ -178,6 +196,17 @@ CREATE INDEX IF NOT EXISTS idx_todos_done ON todos (done);
       done: typeof patch.done === "boolean" ? patch.done : existing.done,
       updatedAt: now,
     };
+
+    // Normalize and validate title after applying patch but before running SQL
+    if (typeof updated.title === "string") {
+      updated.title = updated.title.trim();
+    } else {
+      updated.title = "";
+    }
+    if (updated.title === "") {
+      // Keep behavior consistent with addTodo by throwing a validation error
+      throw new Error("Title must not be empty.");
+    }
 
     const sql = `UPDATE todos
                  SET title = ?, description = ?, done = ?, updated_at = ?
