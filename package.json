@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node src/test/test-inmemory.js",
     "start": "electron .",
-    "update-desktop": "node update-desktop/script.js",
+    "update-app": "bash ./update-desktop/update-app.sh",
     "build": "electron-builder build --mac"
   },
   "keywords": [],

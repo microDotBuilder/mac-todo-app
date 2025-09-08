@@ -9,29 +9,11 @@ const logger = getLogger("main");
 
 logger.info(`__dirname : ${__dirname}`);
 
-const fileStoragePath = path.join(__dirname, "db", "todo.json");
-const sqliteFileStoragePath = path.join(__dirname, "db", "todo.db");
-
 const SQLITE_FLAG = true;
 if (SQLITE_FLAG) logger.info("Using SQLite File Storage feature flag");
 
-const fileStorage = SQLITE_FLAG
-  ? new SqliteFileStorage({
-      filepath: sqliteFileStoragePath,
-    })
-  : new FileStorage({
-      filepath: fileStoragePath,
-    });
-const database = new Database(fileStorage);
+let database;
 let win;
-(() => {
-  try {
-    database.init();
-    logger.info("Database initialized");
-  } catch (error) {
-    logger.error(error);
-  }
-})();
 
 function createWindow() {
   win = new BrowserWindow({
@@ -66,12 +48,12 @@ ipcMain.handle("dark-mode:system", () => {
 
 // Removed navigation-related IPC and events
 
-ipcMain.on("todo:add", (event, todo) => {
+ipcMain.on("todo:add", async (event, todo) => {
   //add todo to database
   logger.info(`todo : ${JSON.stringify(todo, null, 2)}`);
   try {
     logger.info(`adding todo : ${JSON.stringify(todo, null, 2)}`);
-    database.addTodo(todo);
+    await database.addTodo(todo);
     logger.info(`todo added : ${JSON.stringify(todo, null, 2)}`);
   } catch (error) {
     logger.error(error);
@@ -147,7 +129,33 @@ ipcMain.handle("todo:get-current-id", () => {
   return win ? win.todoId : null;
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  try {
+    const userDataPath = app.getPath("userData");
+    const fileStoragePath = path.join(userDataPath, "db", "todo.json");
+    const sqliteFileStoragePath = path.join(userDataPath, "db", "todo.db");
+
+    const fileStorage = SQLITE_FLAG
+      ? new SqliteFileStorage({
+          filepath: sqliteFileStoragePath,
+        })
+      : new FileStorage({
+          filepath: fileStoragePath,
+        });
+
+    database = new Database(fileStorage);
+    await database.init();
+    logger.info(
+      `Database initialized at ${
+        SQLITE_FLAG ? sqliteFileStoragePath : fileStoragePath
+      }`
+    );
+  } catch (error) {
+    logger.error(error);
+  }
+
+  createWindow();
+});
 
 app.on("window-all-closed", () => {
   try {

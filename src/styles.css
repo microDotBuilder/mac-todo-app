@@ -155,7 +155,7 @@ body {
 
 .storage-indicator.is-sql {
   background: rgba(16, 185, 129, 0.12); /* light green */
-  color: #065f46;
+  color: #0c9b73;
   border-color: rgba(16, 185, 129, 0.35);
 }
 
