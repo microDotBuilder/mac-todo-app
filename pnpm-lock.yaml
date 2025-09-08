@@ -8,9 +8,6 @@ dependencies:
   chalk:
     specifier: ^4.1.2
     version: 4.1.2
-  child_process:
-    specifier: ^1.0.2
-    version: 1.0.2
   dotenv:
     specifier: ^17.2.2
     version: 17.2.2
@@ -636,10 +633,6 @@ packages:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
-
-  /child_process@1.0.2:
-    resolution: {integrity: sha512-Wmza/JzL0SiWz7kl6MhIKT5ceIlnFPJX+lwUGj7Clhy5MMldsSoJR0+uvRzOS5Kv45Mq7t1PoE8TsOA9bzvb6g==}
-    dev: false
 
   /chownr@2.0.0:
     resolution: {integrity: sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==}
