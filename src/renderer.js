@@ -17,46 +17,28 @@ document
     document.getElementById("theme-source").innerHTML = "System";
   });
 
-// Navigation buttons
-document.getElementById("next").addEventListener("click", async () => {
-  await window.goToNextPage.next();
-});
-
-document.getElementById("back").addEventListener("click", async () => {
-  await window.goToNextPage.back();
-});
-
-document.getElementById("forward").addEventListener("click", async () => {
-  await window.goToNextPage.forward();
-});
-
-// Keep back/forward buttons in sync
-async function updateNavButtonsInitial() {
-  const backBtn = document.getElementById("back");
-  const forwardBtn = document.getElementById("forward");
-
-  try {
-    backBtn.disabled = !(await window.nav.canGoBack());
-    forwardBtn.disabled = !(await window.nav.canGoForward());
-  } catch (e) {
-    // ignore if IPC not available yet
-  }
-}
-
-// Listen for immediate updates from main
-window.nav.onUpdate((state) => {
-  const backBtn = document.getElementById("back");
-  const forwardBtn = document.getElementById("forward");
-  if (backBtn) backBtn.disabled = !state.canGoBack;
-  if (forwardBtn) forwardBtn.disabled = !state.canGoForward;
-});
-
 // Run initial check once DOM is ready
 window.addEventListener("DOMContentLoaded", () => {
-  updateNavButtonsInitial();
-  // Refresh todo list when returning from edit page
+  // Refresh UI
+  updateSqlFlag();
   refreshTodoList();
 });
+
+async function updateSqlFlag() {
+  const sqlFlag = await window.sqlFlag.get();
+  const el = document.getElementById("sql-flag");
+  if (!el) return;
+  el.classList.remove("is-sql", "is-file");
+  if (sqlFlag) {
+    el.classList.add("is-sql");
+    el.textContent = "SQL";
+    el.title = "SQL storage";
+  } else {
+    el.classList.add("is-file");
+    el.textContent = "File";
+    el.title = "File storage";
+  }
+}
 
 // Function to refresh the todo list
 async function refreshTodoList() {

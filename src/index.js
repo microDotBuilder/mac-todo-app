@@ -44,19 +44,7 @@ function createWindow() {
 
   win.loadFile("src/index.html");
 
-  // Update renderer navigation state whenever navigation occurs
-  const sendNavState = () => {
-    if (!win || !win.webContents) return;
-    win.webContents.send("nav:update", {
-      canGoBack: win.webContents.navigationHistory.canGoBack(),
-      canGoForward: win.webContents.navigationHistory.canGoForward(),
-    });
-  };
-
-  win.webContents.on("did-navigate", sendNavState);
-  win.webContents.on("did-navigate-in-page", sendNavState);
-  // Also send initial state when ready
-  win.webContents.on("did-finish-load", sendNavState);
+  // No history navigation UI anymore
 }
 
 ipcMain.handle("dark-mode:toggle", () => {
@@ -68,46 +56,15 @@ ipcMain.handle("dark-mode:toggle", () => {
   return nativeTheme.shouldUseDarkColors;
 });
 
+ipcMain.handle("sql-flag:get", () => {
+  return SQLITE_FLAG;
+});
+
 ipcMain.handle("dark-mode:system", () => {
   nativeTheme.themeSource = "system";
 });
 
-// Navigate to next page (this creates a new history entry)
-ipcMain.on("next-page", () => {
-  if (win) {
-    win.loadFile("src/next.html");
-  }
-});
-
-// Go back in history
-ipcMain.on("back-page", () => {
-  if (win && win.webContents.navigationHistory.canGoBack()) {
-    win.webContents.navigationHistory.goBack();
-  }
-});
-
-// Go forward in history
-ipcMain.on("forward-page", () => {
-  if (win && win.webContents.navigationHistory.canGoForward()) {
-    win.webContents.navigationHistory.goForward();
-  }
-});
-
-// Allow renderer to ask whether it can go back/forward
-ipcMain.handle("nav:can-go-back", () => {
-  return !!(
-    win &&
-    win.webContents &&
-    win.webContents.navigationHistory.canGoBack()
-  );
-});
-ipcMain.handle("nav:can-go-forward", () => {
-  return !!(
-    win &&
-    win.webContents &&
-    win.webContents.navigationHistory.canGoForward()
-  );
-});
+// Removed navigation-related IPC and events
 
 ipcMain.on("todo:add", (event, todo) => {
   //add todo to database

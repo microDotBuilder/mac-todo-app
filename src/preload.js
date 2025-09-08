@@ -6,20 +6,7 @@ contextBridge.exposeInMainWorld("darkMode", {
   system: () => ipcRenderer.invoke("dark-mode:system"),
 });
 
-contextBridge.exposeInMainWorld("goToNextPage", {
-  next: () => ipcRenderer.send("next-page"),
-  back: () => ipcRenderer.send("back-page"),
-  forward: () => ipcRenderer.send("forward-page"),
-});
-
-contextBridge.exposeInMainWorld("nav", {
-  canGoBack: () => ipcRenderer.invoke("nav:can-go-back"),
-  canGoForward: () => ipcRenderer.invoke("nav:can-go-forward"),
-  onUpdate: (cb) => {
-    // cb receives state: { canGoBack, canGoForward }
-    ipcRenderer.on("nav:update", (_, state) => cb(state));
-  },
-});
+// Removed goToNextPage and nav exposures
 
 contextBridge.exposeInMainWorld("todo", {
   addTodo: (todo) => ipcRenderer.send("todo:add", todo),
@@ -30,4 +17,8 @@ contextBridge.exposeInMainWorld("todo", {
   deleteTodo: (todo) => ipcRenderer.invoke("todo:delete", todo),
   navigateToEdit: (todoId) => ipcRenderer.send("navigate:edit", todoId),
   navigateToMain: () => ipcRenderer.send("navigate:main"),
+});
+
+contextBridge.exposeInMainWorld("sqlFlag", {
+  get: () => ipcRenderer.invoke("sql-flag:get"),
 });

@@ -114,10 +114,55 @@ body {
   color: var(--muted);
 }
 
-.nav-controls {
+/* status area replacing old nav controls */
+.status-controls {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Storage indicator (SQL/File) */
+.storage-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  transition: transform 0.08s ease, box-shadow 0.2s ease, background 0.2s ease,
+    color 0.2s ease, border-color 0.2s ease;
+}
+
+.storage-indicator::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.storage-indicator:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.storage-indicator.is-sql {
+  background: rgba(16, 185, 129, 0.12); /* light green */
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.storage-indicator.is-file {
+  background: rgba(59, 130, 246, 0.12); /* blue */
+  color: #1e3a8a;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 /* Buttons */
