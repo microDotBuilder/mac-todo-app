@@ -4,16 +4,14 @@
 [x] if the feature flag is on only then we will render that.
 [x] always build in feature flag branch.
 [x] Update the desktop app
+[x] add sqlite3
+[x] port everything to sqlite.
 
 ## !importance
 
-[ ] fix the update script issue.make sure the app is close before updating the app. and the error is cannot launch application as it may be damaged or incomplete. - test the command locally first . try doing this using console command. - then create the script to do that.
+[ ] write custom bash script to run build and copy of command using logger.
 
 ## features
-
-[ ] add sqlite3
-[ ] port everything to sqlite.
-[ ]
 
 [ ] Add weekly and daily to-do views
 [ ] Add a calendar header to show dates
